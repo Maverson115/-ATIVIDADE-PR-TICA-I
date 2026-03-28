@@ -1,0 +1,298 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Program
+{
+    // DICTIONARY: cada exercício é identificado por um ID único
+    // A chave (int) é o ID, o valor é o dado do exercício
+    static Dictionary<int, string> nomes = new Dictionary<int, string>();
+    static Dictionary<int, string> gruposMusculares = new Dictionary<int, string>();
+    static Dictionary<int, double> cargas = new Dictionary<int, double>();
+    static Dictionary<int, int> repeticoes = new Dictionary<int, int>();
+
+    // Contador para gerar IDs únicos
+    static int proximoId = 1;
+
+    static void Main(string[] args)
+    {
+        int opcao = -1;
+
+        do
+        {
+            ExibirMenu();
+            string entrada = Console.ReadLine();
+
+            if (!int.TryParse(entrada, out opcao) || opcao < 0 || opcao > 7)
+            {
+                Console.WriteLine("\nOpção inválida! Tente novamente.");
+                continue;
+            }
+
+            switch (opcao)
+            {
+                case 1: AdicionarExercicio(); break;
+                case 2: ListarExercicios(); break;
+                case 3: BuscarExercicioPorNome(); break;
+                case 4: FiltrarPorGrupoMuscular(); break;
+                case 5: CalcularCargaTotal(); break;
+                case 6: ExibirExercicioMaisPesado(); break;
+                case 7: RemoverExercicio(); break;
+                case 0: Console.WriteLine("\nSaindo do sistema. Até logo!"); break;
+            }
+
+        } while (opcao != 0);
+    }
+
+    static void ExibirMenu()
+    {
+        Console.WriteLine("\n========================================");
+        Console.WriteLine("   SISTEMA DE TREINO - ACADEMIA");
+        Console.WriteLine("========================================");
+        Console.WriteLine("1 - Adicionar exercício");
+        Console.WriteLine("2 - Listar exercícios");
+        Console.WriteLine("3 - Buscar exercício por nome");
+        Console.WriteLine("4 - Filtrar por grupo muscular");
+        Console.WriteLine("5 - Calcular carga total do treino");
+        Console.WriteLine("6 - Exibir exercício mais pesado");
+        Console.WriteLine("7 - Remover exercício");
+        Console.WriteLine("0 - Sair");
+        Console.WriteLine("========================================");
+        Console.Write("Escolha uma opção: ");
+    }
+
+    // OPÇÃO 1 - ADICIONAR EXERCÍCIO
+    static void AdicionarExercicio()
+    {
+        Console.WriteLine("\n--- ADICIONAR EXERCÍCIO ---");
+
+        string nome = LerTexto("Nome do exercício: ");
+        string grupo = LerTexto("Grupo muscular (ex: Peito, Perna, Costas): ");
+        double carga = LerDouble("Carga (em kg): ", 0);
+        int reps = LerInt("Repetições: ", 1);
+
+        // Adiciona nos 4 dicionários com a MESMA chave (ID)
+        nomes.Add(proximoId, nome);
+        gruposMusculares.Add(proximoId, grupo);
+        cargas.Add(proximoId, carga);
+        repeticoes.Add(proximoId, reps);
+
+        Console.WriteLine($"\nExercício '{nome}' adicionado com sucesso! (ID: {proximoId})");
+        proximoId++;
+    }
+
+    // OPÇÃO 2 - LISTAR EXERCÍCIOS
+    static void ListarExercicios()
+    {
+        Console.WriteLine("\n--- LISTA DE EXERCÍCIOS ---");
+
+        if (nomes.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        // LINQ: percorre todas as chaves do dicionário
+        foreach (int id in nomes.Keys)
+        {
+            Console.WriteLine($"[ID:{id}] {nomes[id]} - {gruposMusculares[id]} - {cargas[id]} kg - {repeticoes[id]} repetições");
+        }
+    }
+
+    // OPÇÃO 3 - BUSCAR POR NOME (LINQ .Where)
+    static void BuscarExercicioPorNome()
+    {
+        Console.WriteLine("\n--- BUSCAR EXERCÍCIO POR NOME ---");
+
+        if (nomes.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        Console.Write("Digite o nome do exercício: ");
+        string busca = Console.ReadLine();
+
+        // LINQ: filtra as chaves onde o nome bate com a busca
+        var idsEncontrados = nomes
+            .Where(par => par.Value.Equals(busca, StringComparison.OrdinalIgnoreCase))
+            .Select(par => par.Key)
+            .ToList();
+
+        if (idsEncontrados.Count == 0)
+        {
+            Console.WriteLine("Exercício não encontrado.");
+            return;
+        }
+
+        foreach (int id in idsEncontrados)
+        {
+            Console.WriteLine($"\nID: {id}");
+            Console.WriteLine($"Nome: {nomes[id]}");
+            Console.WriteLine($"Grupo Muscular: {gruposMusculares[id]}");
+            Console.WriteLine($"Carga: {cargas[id]} kg");
+            Console.WriteLine($"Repetições: {repeticoes[id]}");
+        }
+    }
+
+    // OPÇÃO 4 - FILTRAR POR GRUPO MUSCULAR (LINQ .Where + .Select)
+    static void FiltrarPorGrupoMuscular()
+    {
+        Console.WriteLine("\n--- FILTRAR POR GRUPO MUSCULAR ---");
+
+        if (nomes.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        Console.Write("Digite o grupo muscular: ");
+        string grupo = Console.ReadLine();
+
+        // LINQ: filtra pelo grupo e projeta só o nome
+        var exerciciosFiltrados = gruposMusculares
+            .Where(par => par.Value.Equals(grupo, StringComparison.OrdinalIgnoreCase))
+            .Select(par => nomes[par.Key])
+            .ToList();
+
+        if (exerciciosFiltrados.Count == 0)
+        {
+            Console.WriteLine($"Nenhum exercício encontrado para o grupo '{grupo}'.");
+            return;
+        }
+
+        Console.WriteLine($"\nExercícios do grupo '{grupo}':");
+        foreach (string nome in exerciciosFiltrados)
+        {
+            Console.WriteLine($"  - {nome}");
+        }
+    }
+
+    // OPÇÃO 5 - CARGA TOTAL (LINQ .Sum)
+    static void CalcularCargaTotal()
+    {
+        Console.WriteLine("\n--- CARGA TOTAL DO TREINO ---");
+
+        if (cargas.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        // LINQ: soma todos os valores do dicionário de cargas
+        double total = cargas.Values.Sum();
+        Console.WriteLine($"Carga total do treino: {total} kg");
+    }
+
+    // OPÇÃO 6 - EXERCÍCIO MAIS PESADO (LINQ .Max + .First)
+    static void ExibirExercicioMaisPesado()
+    {
+        Console.WriteLine("\n--- EXERCÍCIO MAIS PESADO ---");
+
+        if (cargas.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        // LINQ: encontra o maior valor e depois busca a chave correspondente
+        double maiorCarga = cargas.Values.Max();
+
+        int id = cargas
+            .Where(par => par.Value == maiorCarga)
+            .Select(par => par.Key)
+            .First();
+
+        Console.WriteLine($"Exercício mais pesado: {nomes[id]} - {maiorCarga} kg");
+    }
+
+    // OPÇÃO 7 - REMOVER EXERCÍCIO (LINQ .Where)
+    static void RemoverExercicio()
+    {
+        Console.WriteLine("\n--- REMOVER EXERCÍCIO ---");
+
+        if (nomes.Count == 0)
+        {
+            Console.WriteLine("Nenhum exercício cadastrado.");
+            return;
+        }
+
+        Console.Write("Digite o nome do exercício a remover: ");
+        string busca = Console.ReadLine();
+
+        // LINQ: busca o ID pelo nome
+        var resultado = nomes
+            .Where(par => par.Value.Equals(busca, StringComparison.OrdinalIgnoreCase))
+            .Select(par => par.Key)
+            .ToList();
+
+        if (resultado.Count == 0)
+        {
+            Console.WriteLine("Exercício não encontrado.");
+            return;
+        }
+
+        int id = resultado[0];
+        string nomeRemovido = nomes[id];
+
+        // Remove de TODOS os dicionários com a mesma chave
+        nomes.Remove(id);
+        gruposMusculares.Remove(id);
+        cargas.Remove(id);
+        repeticoes.Remove(id);
+
+        Console.WriteLine($"Exercício '{nomeRemovido}' removido com sucesso!");
+    }
+
+    // ========== MÉTODOS AUXILIARES DE VALIDAÇÃO ==========
+
+    // Lê texto não vazio do usuário
+    static string LerTexto(string mensagem)
+    {
+        string valor;
+        do
+        {
+            Console.Write(mensagem);
+            valor = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(valor))
+                Console.WriteLine("Erro: O campo não pode ser vazio.");
+        } while (string.IsNullOrWhiteSpace(valor));
+        return valor;
+    }
+
+    // Lê um double válido >= minimo
+    static double LerDouble(string mensagem, double minimo)
+    {
+        double valor;
+        bool valido;
+        do
+        {
+            Console.Write(mensagem);
+            valido = double.TryParse(Console.ReadLine(), out valor);
+            if (!valido || valor < minimo)
+            {
+                Console.WriteLine($"Erro: Deve ser um valor numérico >= {minimo}.");
+                valido = false;
+            }
+        } while (!valido);
+        return valor;
+    }
+
+    // Lê um int válido >= minimo
+    static int LerInt(string mensagem, int minimo)
+    {
+        int valor;
+        bool valido;
+        do
+        {
+            Console.Write(mensagem);
+            valido = int.TryParse(Console.ReadLine(), out valor);
+            if (!valido || valor < minimo)
+            {
+                Console.WriteLine($"Erro: Deve ser um valor numérico >= {minimo}.");
+                valido = false;
+            }
+        } while (!valido);
+        return valor;
+    }
+}
